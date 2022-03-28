@@ -17,17 +17,9 @@ import lxml.etree
 from requests.adapters import HTTPAdapter
 
 
-__CHAPTER_FOLDER_PATH__ = './download/{author}/{title}/chapters'
-__BOOK_FILE_PATH__ = './download/{author}/{title}.txt'
+CHAPTER_FOLDER_PATH = './download/{author}/{title}/chapters'
+BOOK_FILE_PATH = './download/{author}/{title}.txt'
 
-
-def setChapterFolderPath(format: str = './download/{author}/{title}/chapters'):
-    __CHAPTER_FOLDER_PATH__ = format
-
-
-def setBookFilePath(format: str = './download/{author}/{title}.txt'):
-    __BOOK_FILE_PATH__ = format
-    
 
 class BookImp(metaclass=abc.ABCMeta):
     def __init__(self):
@@ -114,7 +106,7 @@ class BookImp(metaclass=abc.ABCMeta):
     def _formatFolder_(self, folder: str):
         return aigpy.path.replaceLimitChar(folder, '-')
 
-    def _formatChapterFolderPath_(self, bookInfo, format: str = __CHAPTER_FOLDER_PATH__) -> str:
+    def _formatChapterFolderPath_(self, bookInfo, format: str = CHAPTER_FOLDER_PATH) -> str:
         path = format
         path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
         path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
@@ -126,7 +118,7 @@ class BookImp(metaclass=abc.ABCMeta):
         # name = re.sub("(第[\u4e00-\u9fa5\u767e\u5343\u96f6]{1,10}章)|(第[0-9]{1,10}章)", "", name)
         return name
 
-    def _formatBookFilePath_(self, bookInfo, format: str = __BOOK_FILE_PATH__):
+    def _formatBookFilePath_(self, bookInfo, format: str = BOOK_FILE_PATH):
         path = format
         path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
         path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
@@ -145,7 +137,7 @@ class BookImp(metaclass=abc.ABCMeta):
         author = bookInfo['author']
 
         # 保存目录
-        path = self._formatChapterFolderPath_(bookInfo)
+        path = self._formatChapterFolderPath_(bookInfo, CHAPTER_FOLDER_PATH)
         if not aigpy.path.mkdirs(path):
             return False
 
@@ -172,7 +164,7 @@ class BookImp(metaclass=abc.ABCMeta):
         return True
 
     def combineBook(self, bookInfo):
-        chapterPath = self._formatChapterFolderPath_(bookInfo)
+        chapterPath = self._formatChapterFolderPath_(bookInfo, CHAPTER_FOLDER_PATH)
         if not os.path.exists(chapterPath):
             return ''
 
@@ -180,7 +172,7 @@ class BookImp(metaclass=abc.ABCMeta):
         if len(array) <= 0:
             return False
 
-        bookPath = self._formatBookFilePath_(bookInfo)
+        bookPath = self._formatBookFilePath_(bookInfo, BOOK_FILE_PATH)
         file = open(bookPath, 'w', encoding="utf-8")
         for item in array:
             itemName = item.split('_')[1]
