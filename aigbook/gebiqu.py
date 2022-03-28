@@ -14,6 +14,7 @@ from aigbook.book import BookImp
 
 class GeBiqu(BookImp):
     def __init__(self) -> None:
+        super().__init__()
         self.weburl = 'www.gebiqu.com'
 
     def search(self, title, author=None):
