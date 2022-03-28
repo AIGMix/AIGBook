@@ -9,7 +9,6 @@
 @Desc    :  
 """
 
-import re
 import os
 import abc
 import aigpy
@@ -17,6 +16,18 @@ import requests
 import lxml.etree
 from requests.adapters import HTTPAdapter
 
+
+__CHAPTER_FOLDER_PATH__ = './download/{author}/{title}/chapters'
+__BOOK_FILE_PATH__ = './download/{author}/{title}.txt'
+
+
+def setChapterFolderPath(format: str = './download/{author}/{title}/chapters'):
+    __CHAPTER_FOLDER_PATH__ = format
+
+
+def setBookFilePath(format: str = './download/{author}/{title}.txt'):
+    __BOOK_FILE_PATH__ = format
+    
 
 class BookImp(metaclass=abc.ABCMeta):
     def __init__(self):
@@ -96,33 +107,31 @@ class BookImp(metaclass=abc.ABCMeta):
             content = content.replace(u'\xa0', u'')
             content = content.replace(u'\u3000', ' ')
             lines[index] = content
-            
+
         content = '\n'.join(lines)
         return content
-        
-        
+
     def _formatFolder_(self, folder: str):
         return aigpy.path.replaceLimitChar(folder, '-')
 
-    def _formatChapterFolderPath_(self, bookInfo, format: str = './download/{author}/{title}/chapters') -> str:
+    def _formatChapterFolderPath_(self, bookInfo, format: str = __CHAPTER_FOLDER_PATH__) -> str:
         path = format
         path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
         path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
+        path = path.replace('{weburl}', self._formatFolder_(self.weburl))
         return path
-
 
     def _formatChapterFileName_(self, name: str):
         name = aigpy.path.replaceLimitChar(name, '-')
         # name = re.sub("(第[\u4e00-\u9fa5\u767e\u5343\u96f6]{1,10}章)|(第[0-9]{1,10}章)", "", name)
         return name
 
-
-    def _formatBookFilePath_(self, bookInfo, format: str = './download/{author}/{title}.txt'):
+    def _formatBookFilePath_(self, bookInfo, format: str = __BOOK_FILE_PATH__):
         path = format
         path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
         path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
+        path = path.replace('{weburl}', self._formatFolder_(self.weburl))
         return path
-
 
     def _existChapterSum_(self, path: str):
         folder = os.path.exists(path)
@@ -130,7 +139,6 @@ class BookImp(metaclass=abc.ABCMeta):
             os.makedirs(path)
             return 0
         return len(os.listdir(path))
-
 
     def downloadChapters(self, bookInfo):
         title = bookInfo['title']
@@ -143,7 +151,7 @@ class BookImp(metaclass=abc.ABCMeta):
 
         # 获取目录内最新章节
         existSum = self._existChapterSum_(path)
-        startIndex = (existSum - 1) if existSum > 0 else 0
+        startIndex = existSum if existSum > 0 else 0
 
         print(f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
 
@@ -155,14 +163,13 @@ class BookImp(metaclass=abc.ABCMeta):
                 print(f'== ERR {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
                 return False
 
-            itemPath = f"{path}/{index}_{self._formatChapterFileName_(item['name'])}"
+            itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._formatChapterFileName_(item['name'])}"
             file = open(itemPath, 'w', encoding="utf-8")
             file.write(content)
             file.close()
 
             print(f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
         return True
-
 
     def combineBook(self, bookInfo):
         chapterPath = self._formatChapterFolderPath_(bookInfo)
@@ -176,9 +183,11 @@ class BookImp(metaclass=abc.ABCMeta):
         bookPath = self._formatBookFilePath_(bookInfo)
         file = open(bookPath, 'w', encoding="utf-8")
         for item in array:
-            lines = aigpy.file.getLines(chapterPath + '/' + item, encoding="utf-8")
-            file.writelines(lines)
-            file.writelines("\n")
+            itemName = item.split('_')[1]
+            itemLines = aigpy.file.getLines(chapterPath + '/' + item, encoding="utf-8")
+            file.write(itemName)
+            file.writelines('　　' + x + '\n' for x in itemLines)
+            file.writelines("\n\n")
         file.close()
 
         return bookPath
