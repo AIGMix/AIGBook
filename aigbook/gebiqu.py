@@ -21,7 +21,7 @@ class GeBiqu(BookImp):
         url = f"https://www.gebiqu.com/modules/article/search.php?searchkey={title}"
         html = self._getHtml_(url)
         if html is None:
-            return []
+            return None
 
         req_names = html.xpath('//*[@id="nr"]/td[1]/a/text()')
         req_authors = html.xpath('//*[@id="nr"]/td[3]/text()')

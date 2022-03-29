@@ -19,7 +19,7 @@ class Zw81(BookImp):
         url = f"https://www.81zw.com/search.php?q={title}"
         html= self._getHtml_(url)
         if html is None:
-            return []
+            return None
         
         # 解析请求对比返回是否一致
         req_names = html.xpath('/html/body/div[3]/div/div[2]/h3/a/span/text()')
