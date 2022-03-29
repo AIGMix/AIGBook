@@ -33,7 +33,7 @@ class GeBiqu(BookImp):
             itemAuthor = req_authors[index]
             itemUrl = re.sub(r'\d*.html$', '', str(req_urls[index]))
 
-            if author is None or author == itemAuthor:
+            if author is None or author == '' or author == itemAuthor:
                 array.append({
                     'title': itemName,
                     'author': itemAuthor,

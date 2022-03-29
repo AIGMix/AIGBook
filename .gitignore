@@ -1,3 +1,6 @@
 /download
 aigbook/__pycache__
 test.py
+aigbook.egg-info
+build
+dist
