@@ -18,8 +18,6 @@ class Zw81(BookImp):
     def search(self, title, author=None):
         url = f"https://www.81zw.com/search.php?q={title}"
         html= self._getHtml_(url)
-        if html is None:
-            return []
         
         # 解析请求对比返回是否一致
         req_names = html.xpath('/html/body/div[3]/div/div[2]/h3/a/span/text()')
@@ -42,8 +40,6 @@ class Zw81(BookImp):
 
     def getBookInfo(self, url):
         html = self._getHtml_(url)
-        if html is None:
-            return {}
         
         bookName = html.xpath('//*[@id="info"]/h1/text()')[0]
         bookAuthor = html.xpath('//*[@id="info"]/p[1]/text()')[0].split('：')[1]

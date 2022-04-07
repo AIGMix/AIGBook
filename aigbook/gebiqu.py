@@ -20,8 +20,6 @@ class GeBiqu(BookImp):
     def search(self, title, author=None):
         url = f"https://www.gebiqu.com/modules/article/search.php?searchkey={title}"
         html = self._getHtml_(url)
-        if html is None:
-            return []
 
         req_names = html.xpath('//*[@id="nr"]/td[1]/a/text()')
         req_authors = html.xpath('//*[@id="nr"]/td[3]/text()')
@@ -43,9 +41,7 @@ class GeBiqu(BookImp):
 
     def getBookInfo(self, url):
         html = self._getHtml_(url)
-        if html is None:
-            return {}
-
+        
         bookName = html.xpath('//*[@id="info"]/h1/text()')[0]
         bookAuthor = html.xpath('//*[@id="info"]/p[1]/text()')[0].split('：')[1]
         bookImageUrl = html.xpath('//*[@id="fmimg"]/img/@src')[0]

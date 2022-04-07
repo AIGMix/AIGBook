@@ -28,6 +28,7 @@ class BookImp(metaclass=abc.ABCMeta):
         self.session = requests.Session()
         self.session.mount('http://', HTTPAdapter(max_retries=3))
         self.session.mount('https://', HTTPAdapter(max_retries=3))
+        self.progress = None
 
     def _getHtml_(self, url):
         retry = 3
@@ -38,8 +39,8 @@ class BookImp(metaclass=abc.ABCMeta):
                 return html
             except requests.exceptions.RequestException as e:
                 retry -= 1
-                print("Err: _getHtml_ failed." + str(e))
-        return None
+                if retry <= 0:
+                    raise e
 
     @abc.abstractmethod
     def search(self, title, author=None) -> dict:
@@ -91,8 +92,6 @@ class BookImp(metaclass=abc.ABCMeta):
             str: 章节内容
         """
         html = self._getHtml_(url)
-        if html is None:
-            return None
 
         lines = html.xpath('//div[@id="content"]/text()')
         for index, content in enumerate(lines):
@@ -132,6 +131,11 @@ class BookImp(metaclass=abc.ABCMeta):
             return 0
         return len(os.listdir(path))
 
+    def _printProgress(self, sum, index, msg):
+        print(msg)
+        if self.progress is not None:
+            self.progress(sum, index, msg)
+
     def downloadChapters(self, bookInfo):
         """下载章节"""
         title = bookInfo['title']
@@ -143,25 +147,26 @@ class BookImp(metaclass=abc.ABCMeta):
             return False
 
         # 获取目录内最新章节
+        downloadSum = len(bookInfo['chapters'])
         existSum = self._existChapterSum_(path)
         startIndex = existSum if existSum > 0 else 0
 
-        print(f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
+        self._printProgress(startIndex, 
+                            downloadSum,
+                            f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
 
         for index, item in enumerate(bookInfo['chapters']):
             if index < startIndex:
                 continue
             content = self.getChaptersContent(item['url'])
-            if content is None:
-                print(f'== ERR {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
-                return False
-
             itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._formatFolder_(item['name'])}"
             file = open(itemPath, 'w', encoding="utf-8")
             file.write(content)
             file.close()
 
-            print(f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
+            self._printProgress(index + 1,
+                                downloadSum,
+                                f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
         return True
 
     def combineBook(self, bookInfo, isZip=False):
@@ -172,7 +177,7 @@ class BookImp(metaclass=abc.ABCMeta):
 
         array = os.listdir(chapterPath)
         if len(array) <= 0:
-            return False
+            return ''
 
         bookPath = self._formatBookFilePath_(bookInfo, BOOK_FILE_PATH)
         file = open(bookPath, 'w', encoding="utf-8")
@@ -191,3 +196,11 @@ class BookImp(metaclass=abc.ABCMeta):
         zipHandle.write(bookPath, compress_type=zipfile.ZIP_DEFLATED)
         zipHandle.close()
         return bookPath + '.zip'
+
+    def setProgressFunc(self, func):
+        """设置进度回调
+
+        Args:
+            func (_type_): xxx(sum, index, msg)
+        """
+        self.progress = func
