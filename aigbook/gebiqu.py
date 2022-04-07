@@ -14,6 +14,7 @@ from aigbook.book import BookImp
 
 class GeBiqu(BookImp):
     def __init__(self) -> None:
+        super().__init__()
         self.weburl = 'www.gebiqu.com'
 
     def search(self, title, author=None):
@@ -32,7 +33,7 @@ class GeBiqu(BookImp):
             itemAuthor = req_authors[index]
             itemUrl = re.sub(r'\d*.html$', '', str(req_urls[index]))
 
-            if author is None or author == itemAuthor:
+            if author is None or author == '' or author == itemAuthor:
                 array.append({
                     'title': itemName,
                     'author': itemAuthor,
@@ -43,7 +44,7 @@ class GeBiqu(BookImp):
     def getBookInfo(self, url):
         html = self._getHtml_(url)
         if html is None:
-            return None
+            return {}
 
         bookName = html.xpath('//*[@id="info"]/h1/text()')[0]
         bookAuthor = html.xpath('//*[@id="info"]/p[1]/text()')[0].split('：')[1]

@@ -32,7 +32,7 @@ class Zw81(BookImp):
             itemAuthor = req_authors[index]
             itemUrl = 'https://www.81zw.com' + req_urls[index]
 
-            if author is None or author == itemAuthor:
+            if author is None or author == '' or author == itemAuthor:
                 array.append({
                     'title': itemName,
                     'author': itemAuthor,
@@ -43,7 +43,7 @@ class Zw81(BookImp):
     def getBookInfo(self, url):
         html = self._getHtml_(url)
         if html is None:
-            return None
+            return {}
         
         bookName = html.xpath('//*[@id="info"]/h1/text()')[0]
         bookAuthor = html.xpath('//*[@id="info"]/p[1]/text()')[0].split('：')[1]

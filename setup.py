@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='aigpy',
-    version='2022.01.20.1',
+    name='aigbook',
+    version='1.0.0.1',
     license="MIT Licence",
-    description="Python Common Tool",
+    description="",
 
     author='Yaronzz',
     author_email="yaronhuang@foxmail.com",
@@ -12,5 +12,5 @@ setup(
     packages=find_packages(),
     platforms="any",
     include_package_data=True,
-    install_requires=["requests", "colorama", "mutagen"],
+    install_requires=["requests", "aigpy", "lxml"],
 )
