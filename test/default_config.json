@@ -1,0 +1,5 @@
+{
+    "source": "gebiqu",
+    "chapter_folder_path": "./download/{weburl}/{author}/{title}/chapters",
+    "book_file_path": "./download/{weburl}/{author}/{title}.txt"
+}
