@@ -25,7 +25,7 @@ with open('./config.json', 'r') as fd:
     HANDLE = aigbook.getBookHandle(config['source'])
 
 if __name__ == '__main__':
-    array = HANDLE.search('某霍格沃茨的魔文教授')
+    array = HANDLE.search('全球')
     if len(array) <= 0:
         print("Err: no search result.")
     else:

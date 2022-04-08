@@ -7,3 +7,4 @@ dist
 test/config.json
 test_gui.py
 test_download.py
+test/download

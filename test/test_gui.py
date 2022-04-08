@@ -33,6 +33,9 @@ class MainView(QtWidgets.QWidget):
 
     def __init__(self, ) -> None:
         super().__init__()
+        self.initView()
+        self.setMinimumSize(600, 500)
+        self.setWindowTitle("AIGBook")
         
     def initView(self):
         self.c_lineSearch = QtWidgets.QLineEdit()
@@ -42,7 +45,7 @@ class MainView(QtWidgets.QWidget):
         columnNames = ['#', '标题', '作者', '链接']
         self.c_tableInfo = QtWidgets.QTableWidget()
         self.c_tableInfo.setColumnCount(len(columnNames))
-        self.c_tableInfo.setRowCount(20)
+        self.c_tableInfo.setRowCount(0)
         self.c_tableInfo.setShowGrid(False)
         self.c_tableInfo.verticalHeader().setVisible(False)
         self.c_tableInfo.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
@@ -123,8 +126,6 @@ if __name__ == '__main__':
     apply_stylesheet(app, theme='dark_blue.xml')
 
     window = MainView()
-    window.initView()
-    window.setMinimumSize(600, 500)
     window.show()
 
     app.exec_()
