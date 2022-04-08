@@ -68,10 +68,4 @@ class Zw81(BookImp):
         }
 
 
-if __name__ == '__main__':
-    obj = Zw81()
-    array = obj.search('某霍格沃茨')
-    info = obj.getBookInfo(array[3]['url'])
-    # text = obj.getChaptersContent(info['chapters'][0]['url'])
-    obj.downloadChapters(info)
-    obj.combineBook(info)
+

@@ -11,7 +11,6 @@
 
 import os
 import abc
-import aigpy
 import requests
 import lxml.etree
 import zipfile
@@ -28,7 +27,6 @@ class BookImp(metaclass=abc.ABCMeta):
         self.session = requests.Session()
         self.session.mount('http://', HTTPAdapter(max_retries=3))
         self.session.mount('https://', HTTPAdapter(max_retries=3))
-        self.progress = None
 
     def _getHtml_(self, url):
         retry = 3
@@ -40,10 +38,11 @@ class BookImp(metaclass=abc.ABCMeta):
             except requests.exceptions.RequestException as e:
                 retry -= 1
                 if retry <= 0:
+                    print("Err: _getHtml_ failed." + str(e))
                     raise e
 
     @abc.abstractmethod
-    def search(self, title, author=None) -> dict:
+    def search(self, title, author=None) -> list:
         """搜索
 
         Args:
@@ -51,11 +50,11 @@ class BookImp(metaclass=abc.ABCMeta):
             author (str): 作者
 
         Returns:
-            dict: {
+            list: [{
                     'title': 标题,
                     'author': 作者,
                     'url': 链接
-                }
+                }]
         """
         pass
 
@@ -74,11 +73,11 @@ class BookImp(metaclass=abc.ABCMeta):
                 'image': 封面,
                 'about': 介绍,
                 'new_chapter': 最新章节名,
-                'chapters': {
+                'chapters': [{
                     'name': 章节名称,
                     'url': 章节链接
-            },
-        }
+                    }],
+                }
         """
         pass
 
@@ -103,24 +102,30 @@ class BookImp(metaclass=abc.ABCMeta):
         content = '\n'.join(lines)
         return content
 
-    def _formatFolder_(self, folder: str):
+    def _removePathLimitChar_(self, path: str):
         """去除目录的限制符号"""
-        return aigpy.path.replaceLimitChar(folder, '-')
-
-    def _formatChapterFolderPath_(self, bookInfo, format: str = CHAPTER_FOLDER_PATH) -> str:
-        """格式化章节目录"""
-        path = format
-        path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
-        path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
-        path = path.replace('{weburl}', self._formatFolder_(self.weburl))
+        newChar = '-'
+        path = path.replace(':', newChar)
+        path = path.replace('/', newChar)
+        path = path.replace('?', newChar)
+        path = path.replace('<', newChar)
+        path = path.replace('>', newChar)
+        path = path.replace('|', newChar)
+        path = path.replace('\\', newChar)
+        path = path.replace('*', newChar)
+        path = path.replace('\"', newChar)
+        path = path.replace('\n', '')
+        path = path.replace('\t', '')
+        path = path.rstrip('.')
+        path = path.strip(' ')
         return path
 
-    def _formatBookFilePath_(self, bookInfo, format: str = BOOK_FILE_PATH):
-        """格式化书籍文件路径"""
+    def _formatPath_(self, bookInfo, format: str) -> str:
+        """格式目录"""
         path = format
-        path = path.replace('{author}', self._formatFolder_(bookInfo['author']))
-        path = path.replace('{title}', self._formatFolder_(bookInfo['title']))
-        path = path.replace('{weburl}', self._formatFolder_(self.weburl))
+        path = path.replace('{author}', self._removePathLimitChar_(bookInfo['author']))
+        path = path.replace('{title}', self._removePathLimitChar_(bookInfo['title']))
+        path = path.replace('{weburl}', self._removePathLimitChar_(self.weburl))
         return path
 
     def _existChapterSum_(self, path: str):
@@ -131,10 +136,12 @@ class BookImp(metaclass=abc.ABCMeta):
             return 0
         return len(os.listdir(path))
 
-    def _printProgress(self, sum, index, msg):
-        print(msg)
-        if self.progress is not None:
-            self.progress(sum, index, msg)
+    def mkdirs(self, path: str):
+        path = path.replace("\\", "/")
+        path = path.strip()
+        path = path.rstrip("/")
+        if not os.path.exists(path):
+            os.makedirs(path)
 
     def downloadChapters(self, bookInfo):
         """下载章节"""
@@ -142,51 +149,42 @@ class BookImp(metaclass=abc.ABCMeta):
         author = bookInfo['author']
 
         # 保存目录
-        path = self._formatChapterFolderPath_(bookInfo, CHAPTER_FOLDER_PATH)
-        if not aigpy.path.mkdirs(path):
-            return False
+        path = self._formatPath_(bookInfo, CHAPTER_FOLDER_PATH)
+        self.mkdirs(path)
 
         # 获取目录内最新章节
-        downloadSum = len(bookInfo['chapters'])
         existSum = self._existChapterSum_(path)
         startIndex = existSum if existSum > 0 else 0
 
-        self._printProgress(startIndex, 
-                            downloadSum,
-                            f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
+        print(f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
 
         for index, item in enumerate(bookInfo['chapters']):
             if index < startIndex:
                 continue
             content = self.getChaptersContent(item['url'])
-            itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._formatFolder_(item['name'])}"
+            itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._removePathLimitChar_(item['name'])}"
             file = open(itemPath, 'w', encoding="utf-8")
             file.write(content)
             file.close()
 
-            self._printProgress(index + 1,
-                                downloadSum,
-                                f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
-        return True
+            print(f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
 
-    def combineBook(self, bookInfo, isZip=False):
+    def combineBook(self, bookInfo, isZip=False) -> str:
         """合并书籍文件"""
-        chapterPath = self._formatChapterFolderPath_(bookInfo, CHAPTER_FOLDER_PATH)
-        if not os.path.exists(chapterPath):
-            return ''
-
+        chapterPath = self._formatPath_(bookInfo, CHAPTER_FOLDER_PATH)
         array = os.listdir(chapterPath)
         if len(array) <= 0:
-            return ''
+            raise Exception('章节目录不存在，请先下载章节文件')
 
-        bookPath = self._formatBookFilePath_(bookInfo, BOOK_FILE_PATH)
+        bookPath = self._formatPath_(bookInfo, BOOK_FILE_PATH)
         file = open(bookPath, 'w', encoding="utf-8")
         for item in array:
             itemName = item.split('_')[1]
-            itemLines = aigpy.file.getLines(chapterPath + '/' + item, encoding="utf-8")
-            file.write(itemName + '\n')
-            file.writelines('　　' + x + '\n' for x in itemLines)
-            file.writelines("\n\n")
+            with open(chapterPath + '/' + item, 'r', encoding="utf-8") as fd:
+                itemLines = fd.readlines()
+                file.write(itemName + '\n')
+                file.writelines('　　' + x + '\n' for x in itemLines)
+                file.writelines("\n\n")
         file.close()
 
         if not isZip:
@@ -196,11 +194,3 @@ class BookImp(metaclass=abc.ABCMeta):
         zipHandle.write(bookPath, compress_type=zipfile.ZIP_DEFLATED)
         zipHandle.close()
         return bookPath + '.zip'
-
-    def setProgressFunc(self, func):
-        """设置进度回调
-
-        Args:
-            func (_type_): xxx(sum, index, msg)
-        """
-        self.progress = func

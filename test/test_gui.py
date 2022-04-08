@@ -8,17 +8,28 @@
 @Contact :  yaronhuang@foxmail.com
 @Desc    :  
 """
+import os
 import sys
+import json
 import aigbook
 import _thread
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import QtWidgets
 from qt_material import apply_stylesheet
 
+os.chdir(sys.path[0])
+
+SOURCE = 'gebiqu'
+with open('./config.json', 'r') as fd:
+    config = json.load(fd)
+    aigbook.book.CHAPTER_FOLDER_PATH = config['chapter_folder_path']
+    aigbook.book.BOOK_FILE_PATH = config['book_file_path']
+    SOURCE = config['source']
 
 class MainView(QtWidgets.QWidget):
-    SIGNAL_DOWNLOAD_END = pyqtSignal(str, bool, str)
+    s_downloadEnd = pyqtSignal(str, bool, str)
 
     def __init__(self, ) -> None:
         super().__init__()
@@ -28,17 +39,19 @@ class MainView(QtWidgets.QWidget):
         self.c_btnSearch = QtWidgets.QPushButton("搜索")
         self.c_btnDownload = QtWidgets.QPushButton("下载")
         
+        columnNames = ['#', '标题', '作者', '链接']
         self.c_tableInfo = QtWidgets.QTableWidget()
-        self.c_tableInfo.setColumnCount(4)
+        self.c_tableInfo.setColumnCount(len(columnNames))
         self.c_tableInfo.setRowCount(20)
         self.c_tableInfo.setShowGrid(False)
         self.c_tableInfo.verticalHeader().setVisible(False)
         self.c_tableInfo.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.c_tableInfo.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         self.c_tableInfo.horizontalHeader().setStretchLastSection(True)
+        self.c_tableInfo.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
         self.c_tableInfo.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.c_tableInfo.setFocusPolicy(Qt.NoFocus)
-        for index, name in enumerate(['#', '标题', '作者', '链接']):
+        for index, name in enumerate(columnNames):
             item = QtWidgets.QTableWidgetItem(name)
             self.c_tableInfo.setHorizontalHeaderItem(index, item)
             
@@ -53,7 +66,7 @@ class MainView(QtWidgets.QWidget):
         
         self.c_btnSearch.clicked.connect(self.search)
         self.c_btnDownload.clicked.connect(self.download)
-        self.SIGNAL_DOWNLOAD_END.connect(self.downloadEnd)
+        self.s_downloadEnd.connect(self.downloadEnd)
 
     def addItem(self, rowIdx: int, colIdx: int, text):
         if isinstance(text, str):
@@ -62,7 +75,7 @@ class MainView(QtWidgets.QWidget):
     
     def search(self):
         text = self.c_lineSearch.text()
-        handle = aigbook.getBookHandle('gebiqu')
+        handle = aigbook.getBookHandle(SOURCE)
         array = handle.search(text)
         
         self.c_tableInfo.setRowCount(len(array))
@@ -86,13 +99,13 @@ class MainView(QtWidgets.QWidget):
         
         def __thread_download__(model: MainView, title: str, url: str):
             try:
-                handle = aigbook.getBookHandle('gebiqu')
+                handle = aigbook.getBookHandle(SOURCE)
                 info = handle.getBookInfo(url)
                 handle.downloadChapters(info)
                 ret = handle.combineBook(info)
-                model.SIGNAL_DOWNLOAD_END.emit(info['title'], True, ret)
+                model.s_downloadEnd.emit(info['title'], True, ret)
             except Exception as e:
-                model.SIGNAL_DOWNLOAD_END.emit(info['title'], False, f"下载失败：{str(e)}")
+                model.s_downloadEnd.emit(info['title'], False, f"下载失败：{str(e)}")
 
         _thread.start_new_thread(__thread_download__, (self, title, url))
     
@@ -111,7 +124,7 @@ if __name__ == '__main__':
 
     window = MainView()
     window.initView()
-    window.setMinimumSize(400, 500)
+    window.setMinimumSize(600, 500)
     window.show()
 
     app.exec_()
