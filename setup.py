@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='aigbook',
-    version='1.0.0.2',
+    version='1.0.0.3',
     license="MIT Licence",
     description="",
 

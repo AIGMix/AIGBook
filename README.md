@@ -30,22 +30,25 @@ handle = aigbook.getBookHandle(sources[0])
 ```
 
 ## 💽 测试
-
-1. 简单样例
+1. 准备工作
 
 ```shell
 cd test
 cp default_config.json config.json
+pip3 install aigbook
+pip3 install pyqt5 --upgrade
+pip3 install qt-material --upgrade
+```
+
+2. 简单样例
+
+```shell
 python ./test_download.py
 ```
 
-2. GUI样例
+3. GUI样例
 
 ```shell
-cd test
-cp default_config.json config.json
-pip3 install pyqt5 --upgrade
-pip3 install qt-material --upgrade
 python ./test_gui.py
 ```
 
