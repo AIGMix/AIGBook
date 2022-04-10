@@ -81,6 +81,10 @@ class MainView(QtWidgets.QWidget):
         handle = aigbook.getBookHandle(SOURCE)
         array = handle.search(text)
         
+        if len(array) <= 0:
+            QtWidgets.QMessageBox.information(self, '提示', '没有结果！', QtWidgets.QMessageBox.Yes)
+            return
+        
         self.c_tableInfo.setRowCount(len(array))
         for index, item in enumerate(array):
             self.addItem(index, 0, str(index + 1))
