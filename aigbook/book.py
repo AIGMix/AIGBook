@@ -15,6 +15,7 @@ import requests
 import lxml.etree
 import zipfile
 from requests.adapters import HTTPAdapter
+from concurrent.futures import ThreadPoolExecutor
 
 
 CHAPTER_FOLDER_PATH = './download/{author}/{title}/chapters'
@@ -152,22 +153,33 @@ class BookImp(metaclass=abc.ABCMeta):
         path = self._formatPath_(bookInfo, CHAPTER_FOLDER_PATH)
         self.mkdirs(path)
 
+        # 获取章节链接+路径集合
+        todoLists = []
+        for index, item in enumerate(bookInfo['chapters']):
+            itemUrl = item['url']
+            itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._removePathLimitChar_(item['name'])}"
+            todoLists.append([itemUrl, itemPath, item['name']])
+        
         # 获取目录内最新章节
         existSum = self._existChapterSum_(path)
         startIndex = existSum if existSum > 0 else 0
-
+        
+        # 下载章节
         print(f'====Download [{title}] chapters from {startIndex} to {len(bookInfo["chapters"])}')
-
-        for index, item in enumerate(bookInfo['chapters']):
+        
+        def __thread_download__(url, path, name):
+            file = open(path, 'w', encoding="utf-8")
+            file.write(self.getChaptersContent(url))
+            file.close()
+            print(f'== SUCCESS: {name} ==')
+        
+        theard_pool = ThreadPoolExecutor(max_workers=10)
+        for index, item in enumerate(todoLists):
             if index < startIndex:
                 continue
-            content = self.getChaptersContent(item['url'])
-            itemPath = f"{path}/{str(index).rjust(4, '0')}_{self._removePathLimitChar_(item['name'])}"
-            file = open(itemPath, 'w', encoding="utf-8")
-            file.write(content)
-            file.close()
-
-            print(f'== SUCCESS {index + 1}/{len(bookInfo["chapters"])} {item["name"]}')
+            theard_pool.submit(__thread_download__, item[0], item[1], item[2])
+        theard_pool.shutdown(wait=True)
+        
 
     def combineBook(self, bookInfo, isZip=False) -> str:
         """合并书籍文件"""
