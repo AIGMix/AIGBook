@@ -19,7 +19,8 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 CHAPTER_FOLDER_PATH = './download/{author}/{title}/chapters'
-BOOK_FILE_PATH = './download/{author}/{title}.txt'
+BOOK_FILE_BASE = './download'
+BOOK_FILE_PATH = BOOK_FILE_BASE + '/{author}/{title}.txt'
 
 
 class BookImp(metaclass=abc.ABCMeta):
@@ -206,3 +207,6 @@ class BookImp(metaclass=abc.ABCMeta):
         zipHandle.write(bookPath, compress_type=zipfile.ZIP_DEFLATED)
         zipHandle.close()
         return bookPath + '.zip'
+
+    def getBookBasePath(self):
+        return BOOK_FILE_BASE

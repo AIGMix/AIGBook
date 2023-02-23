@@ -9,3 +9,7 @@ test_gui.py
 test_download.py
 test/download
 /uploadd.sh
+/__init__.spec
+/aigbook-gui.spec
+/aigbook/aigbook-gui.py
+/gui.spec
